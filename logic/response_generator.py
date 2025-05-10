@@ -12,13 +12,44 @@ api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
 
-async def generate_legal_advice(history):
-    convo = "\n".join([f"{'User' if 'user' in m else 'Bot'}: {list(m.values())[0]}" for m in history])
-    prompt = convo + "\nBot: Based on all the above, here's my legal advice:"
+def generate_legal_advice(history):
+    # Create the conversation messages
+    convo = [{"role": "system", "content": "You are a helpful legal assistant."}]
     
-    response = client.responses.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": "You are a helpful legal assistant."},
-                  {"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message['content']
+    # Add user messages from history to the conversation
+    for message in history:
+        if "user" in message:
+            convo.append({"role": "user", "content": message["user"]})
+        if "bot" in message:
+            convo.append({"role": "assistant", "content": message["bot"]})
+
+    # Call OpenAI's ChatCompletion API to get a response
+    print("Generating legal advice...")
+    print(f"Conversation history: {convo}")
+    # convo = [
+    #     {'role': 'system', 'content': 'You are a helpful and professional legal assistant.'},
+    #     {'role': 'user', 'content': 'I fought john, his leg was broken because of me'},
+    #     {'role': 'assistant', 'content': 'When did this issue occur?'},
+    #     {'role': 'user', 'content': '3 days ago'},
+    #     {'role': 'assistant', 'content': 'Who else is involved?'},
+    #     {'role': 'user', 'content': 'nobody'},
+    #     {'role': 'assistant', 'content': 'What outcome are you seeking?'},
+    #     {'role': 'user', 'content': 'ending without any legal problem'}
+    # ]
+
+    try:
+        # Use the new client.responses.create method
+        response = client.responses.create(
+            instructions="Talk like professional lawyer, and don't say anything that is not related to the question, and \
+            don't answer like a chatbot, and don't recommend anything, just give the legal advice",
+            model="gpt-4.1",  # Or use another model like "gpt-3.5-turbo"
+            input=convo,  # Providing the conversation history in 'input'
+        )
+
+        # Extract the response content
+        reply = response.output_text.strip()
+        return reply
+
+    except Exception as e:
+        print(f"Error in generating legal advice: {e}")
+        return "Sorry, I couldn't generate a response at the moment."

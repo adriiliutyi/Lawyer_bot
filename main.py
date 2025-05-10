@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, Form
 from logic.audio_transcriber import transcribe_audio
-from logic.question_flow import get_next_question, update_session
+from logic.question_flow import get_next_question
 from logic.response_generator import generate_legal_advice
 from logic.tts import text_to_audio
 
@@ -24,7 +24,7 @@ async def ask_lawyer(user_id: str = Form(...), user_input: str = Form(None), aud
         sessions[user_id].append({"bot": next_q})
         return {"reply": next_q}
 
-    final_answer = await generate_legal_advice(sessions[user_id])
+    final_answer = generate_legal_advice(sessions[user_id])
     sessions[user_id].append({"bot": final_answer})
 
     audio_file_path = text_to_audio(final_answer, user_id)
